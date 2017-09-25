@@ -4,6 +4,7 @@ from io import BytesIO
 from PIL import Image
 import imagehash
 from flask import Flask, request, make_response, jsonify, url_for, send_file
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 from db import DB
@@ -13,7 +14,8 @@ ALLOWED_EXTENSIONS = set(['bmp', 'png', 'jpg', 'jpeg', 'gif'])
 # FS_ROOT = 'E:\\PycharmProjects\\bqb_web\\imgs'
 FS_ROOT = '/Users/dd/PycharmProjects/bqb_web/imgs'
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16m
+CORS(app)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 * 10 # 16m * 10
 # db = DB('mongodb://localhost:27017/', 'bqb')
 db = DB('mongodb://172.16.6.218:27017/', 'bqb')
 
@@ -62,9 +64,9 @@ def uploads():
                         file_saved.append({'filename': filename})
                     else:  # 旧图
                         file_unsaved.append({'filename': filename, 'similar_imgs': [build_img_vo(img) for img in similar_imgs]})
-        return add_cors_header(make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200))
+        return make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200)
     else:
-        return add_cors_header(make_response(jsonify({'msg': '喵喵喵？'}), 405))
+        return make_response(jsonify({'msg': '喵喵喵？'}), 405)
 
 
 @app.route("/imgs")

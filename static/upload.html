@@ -8,21 +8,20 @@
     <title>Document</title>
 </head>
 <body>
-    <div>
+    <div id='uploader'>
         <input type="file" multiple="multiple" name="file[]" accept="image/png,image/gif" >
         <button>upload!</button>
+        progress: <span id='progress'>0</span>%
 
         <script>
-            var results = {}
-
-            document.querySelector('button').addEventListener('click', function(event) {
-                let files = document.querySelector('input').files
-                
-
-                var url = 'http://127.0.0.1:8009/uploads'       
-                batch_size = 10
-                batch_number = Math.floor(files.length / batch_size)
-                reast = files.length % batch_size
+            var results = []
+            var url = 'http://127.0.0.1:8009/uploads'       
+            var batch_size = 2
+            
+            document.querySelector('#uploader button').addEventListener('click', function(event) {
+                let files = document.querySelector('input').files  
+                var batch_number = Math.floor(files.length / batch_size)
+                var reast = files.length % batch_size
                 if(batch_number > 0) {
                     for (var i = 0; i < batch_number; i++) {
                         var form_data = new FormData()
@@ -31,7 +30,8 @@
                             form_data.append(file.name, file)
                         }
                         post_data(url, form_data, function(result){
-                            results['batch'+i] = result
+                            results.push(result)
+                            update_progress(results.length, batch_number)
                         })                
                     }
                 }
@@ -42,11 +42,15 @@
                         form_data.append(file.name, file)
                     }
                     post_data(url, form_data, function(result){
-                        results['batch'+batch_number] = result
-                        console.log(result)
+                        results.push(result)
+                        update_progress(results.length, batch_number+1)
                     })
                 }
             }, false)
+
+            function update_progress(current, total) {
+                document.querySelector('#progress').innerText = current/total * 100
+            }
 
             function post_data(url, data, callback) {
                 var xhr = new XMLHttpRequest();
@@ -64,15 +68,15 @@
                 xhr.send(data);
             }
 
-            document.querySelector('input').addEventListener('change', function(event_obj) {
-                let files = document.querySelector('input').files
+            document.querySelector('#uploader input').addEventListener('change', function(event_obj) {
+                let files = document.querySelector('#uploader input').files
                 if (files < 1) return  
                 old_ul = document.querySelector('ul')
                 new_ul = build_list(files)
                 if(old_ul)
-                    document.querySelector('div').replaceChild(new_ul, old_ul)
+                    document.querySelector('#uploader').replaceChild(new_ul, old_ul)
                 else
-                    document.querySelector('div').appendChild(new_ul)
+                    document.querySelector('#uploader').appendChild(new_ul)
 
             }, false)
 
@@ -82,16 +86,17 @@
                     var file = file_list[i];
                     let li = document.createElement('li')
                     li.innerText = file.name+' ['+Math.round(file.size/1024)+'k] '
-
-                    var reader = new FileReader();  
-                    reader.readAsDataURL(file);  
-                    reader.onload = function(event){  
-                        //console.log(event)
-                        var img = document.createElement('img')
-                        img.style['width'] = '100px'
-                        img.src = event.target.result   
-                        li.appendChild(img)
-                    }  
+                    if(file.size <= 1024 * 1024) {       
+                        var reader = new FileReader();  
+                        reader.readAsDataURL(file);  
+                        reader.onload = function(event){  
+                            //console.log(event)
+                            var img = document.createElement('img')
+                            img.style['width'] = '100px'
+                            img.src = event.target.result   
+                            li.appendChild(img)
+                        }  
+                    }
                     ul.appendChild(li)
                 }
                 return ul
