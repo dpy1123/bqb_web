@@ -32,6 +32,13 @@ def save_file(save_path, img_buf):
         fw.flush()
 
 
+def add_cors_header(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'POST'
+    response.headers['Access-Control-Allow-Headers'] = 'x-requested-with,content-type'
+    return response
+
+
 @app.route("/uploads", methods=['GET', 'POST'])
 def uploads():
     if request.method == 'POST':
@@ -55,14 +62,9 @@ def uploads():
                         file_saved.append({'filename': filename})
                     else:  # 旧图
                         file_unsaved.append({'filename': filename, 'similar_imgs': [build_img_vo(img) for img in similar_imgs]})
-        # return make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200)
-        response = make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200)
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'POST'
-        response.headers['Access-Control-Allow-Headers'] = 'x-requested-with,content-type'
-        return response
+        return add_cors_header(make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200))
     else:
-        return make_response(jsonify({'msg': '喵喵喵？'}), 405)
+        return add_cors_header(make_response(jsonify({'msg': '喵喵喵？'}), 405))
 
 
 @app.route("/imgs")
