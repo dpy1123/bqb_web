@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="http://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script>
+    <title>Document</title>
+</head>
+<body>
+    <div>
+        <input type="file" multiple="multiple" name="file[]" accept="image/png,image/gif" >
+        <button>upload!</button>
+
+        <script>
+            var results = {}
+
+            document.querySelector('button').addEventListener('click', function(event) {
+                let files = document.querySelector('input').files
+                
+
+                var url = 'http://127.0.0.1:8009/uploads'       
+                batch_size = 10
+                batch_number = Math.floor(files.length / batch_size)
+                reast = files.length % batch_size
+                if(batch_number > 0) {
+                    for (var i = 0; i < batch_number; i++) {
+                        var form_data = new FormData()
+                        for (var j = 0; j < batch_size; j++) {
+                            var file = files[i*batch_number+j]
+                            form_data.append(file.name, file)
+                        }
+                        post_data(url, form_data, function(result){
+                            results['batch'+i] = result
+                        })                
+                    }
+                }
+                if(reast > 0) {
+                    var form_data = new FormData()
+                    for (var j = 0; j < reast; j++) {
+                        var file = files[batch_size*batch_number+j]
+                        form_data.append(file.name, file)
+                    }
+                    post_data(url, form_data, function(result){
+                        results['batch'+batch_number] = result
+                        console.log(result)
+                    })
+                }
+            }, false)
+
+            function post_data(url, data, callback) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('post', url);
+                xhr.onreadystatechange = function () {
+                    if ( xhr.readyState === xhr.DONE ) {
+                        if ( xhr.status === 200 || xhr.status === 0 ) {
+                            if ( xhr.responseText ) {
+                                var json = JSON.parse(xhr.responseText)
+                                callback( json )
+                            }
+                        }
+                    }
+                }
+                xhr.send(data);
+            }
+
+            document.querySelector('input').addEventListener('change', function(event_obj) {
+                let files = document.querySelector('input').files
+                if (files < 1) return  
+                old_ul = document.querySelector('ul')
+                new_ul = build_list(files)
+                if(old_ul)
+                    document.querySelector('div').replaceChild(new_ul, old_ul)
+                else
+                    document.querySelector('div').appendChild(new_ul)
+
+            }, false)
+
+            function build_list(file_list) {
+                let ul = document.createElement('ul')
+                for (var i = 0; i < file_list.length; i++) {
+                    var file = file_list[i];
+                    let li = document.createElement('li')
+                    li.innerText = file.name+' ['+Math.round(file.size/1024)+'k] '
+
+                    var reader = new FileReader();  
+                    reader.readAsDataURL(file);  
+                    reader.onload = function(event){  
+                        //console.log(event)
+                        var img = document.createElement('img')
+                        img.style['width'] = '100px'
+                        img.src = event.target.result   
+                        li.appendChild(img)
+                    }  
+                    ul.appendChild(li)
+                }
+                return ul
+            }
+        </script>
+    </div>
+</body>
+</html>

@@ -10,10 +10,12 @@ from db import DB
 
 
 ALLOWED_EXTENSIONS = set(['bmp', 'png', 'jpg', 'jpeg', 'gif'])
-FS_ROOT = 'E:\\PycharmProjects\\bqb_web\\imgs'
+# FS_ROOT = 'E:\\PycharmProjects\\bqb_web\\imgs'
+FS_ROOT = '/Users/dd/PycharmProjects/bqb_web/imgs'
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16m
-db = DB('mongodb://localhost:27017/', 'bqb')
+# db = DB('mongodb://localhost:27017/', 'bqb')
+db = DB('mongodb://172.16.6.218:27017/', 'bqb')
 
 
 def allowed_file(filename):
@@ -53,7 +55,12 @@ def uploads():
                         file_saved.append({'filename': filename})
                     else:  # 旧图
                         file_unsaved.append({'filename': filename, 'similar_imgs': [build_img_vo(img) for img in similar_imgs]})
-        return make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200)
+        # return make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200)
+        response = make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200)
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST'
+        response.headers['Access-Control-Allow-Headers'] = 'x-requested-with,content-type'
+        return response
     else:
         return make_response(jsonify({'msg': '喵喵喵？'}), 405)
 
