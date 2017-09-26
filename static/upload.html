@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <script src="http://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script>
+    <!-- <script src="http://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script> -->
     <title>Document</title>
 </head>
 <body>
     <div id='uploader'>
-        <input type="file" multiple="multiple" name="file[]" accept="image/png,image/gif" >
+        <input type="file" multiple="multiple" name="file[]" accept="image/png,image/jpeg,image/gif" >
         <button>upload!</button>
         progress: <span id='progress'>0</span>%
 
         <script>
             var results = []
             var url = 'http://127.0.0.1:8009/uploads'       
-            var batch_size = 2
+            var batch_size = 10
             
             document.querySelector('#uploader button').addEventListener('click', function(event) {
                 let files = document.querySelector('input').files  
@@ -26,7 +26,7 @@
                     for (var i = 0; i < batch_number; i++) {
                         var form_data = new FormData()
                         for (var j = 0; j < batch_size; j++) {
-                            var file = files[i*batch_number+j]
+                            var file = files[i*batch_size+j]
                             form_data.append(file.name, file)
                         }
                         post_data(url, form_data, function(result){
@@ -67,6 +67,43 @@
                 }
                 xhr.send(data);
             }
+            
+            var worker = new Worker('pic_loader.js')
+            worker.onmessage = function(event){
+                var index = event.data.index
+                var img_base64_str = event.data.data_url
+                console.log(index)
+                var img = document.createElement('img')
+                resize_img(img_base64_str, img, 120)  
+                document.querySelector('li:nth-child('+(index+1)+')').appendChild(img)
+            }
+            worker.onerror = function(e){
+                console.log('err: ' + e.message)
+                worker.terminate()
+            }
+
+            function resize_img(img_base64_str, img, size_limit){
+                var canvas = document.createElement('canvas')
+                var ctx = canvas.getContext('2d')
+                ctx.clearRect(0, 0, size_limit, size_limit)
+                var tmp_img = document.createElement('img')
+                tmp_img.src = img_base64_str
+                tmp_img.onload = function() {
+                    var type = img_base64_str.slice(11, img_base64_str.indexOf(';')) //data:image/gif;base64,...
+                    if(type=='gif'){ //gif不缩放，直接给原来的base64str
+                        img.src = img_base64_str
+                    }else{
+                        var w = tmp_img.width
+                        var h = tmp_img.height
+                        var r = w/h
+                        if(r>=1)
+                            ctx.drawImage(tmp_img, 0, (size_limit -size_limit/r)/2, size_limit, size_limit/r)
+                        else
+                            ctx.drawImage(tmp_img, (size_limit -size_limit*r)/2, 0, size_limit*r, size_limit)
+                        img.src = canvas.toDataURL(type)
+                    }
+                }
+            }
 
             document.querySelector('#uploader input').addEventListener('change', function(event_obj) {
                 let files = document.querySelector('#uploader input').files
@@ -78,6 +115,7 @@
                 else
                     document.querySelector('#uploader').appendChild(new_ul)
 
+                worker.postMessage({'files': files})   
             }, false)
 
             function build_list(file_list) {
@@ -85,18 +123,16 @@
                 for (var i = 0; i < file_list.length; i++) {
                     var file = file_list[i];
                     let li = document.createElement('li')
-                    li.innerText = file.name+' ['+Math.round(file.size/1024)+'k] '
-                    if(file.size <= 1024 * 1024) {       
-                        var reader = new FileReader();  
-                        reader.readAsDataURL(file);  
-                        reader.onload = function(event){  
-                            //console.log(event)
-                            var img = document.createElement('img')
-                            img.style['width'] = '100px'
-                            img.src = event.target.result   
-                            li.appendChild(img)
-                        }  
-                    }
+                    li.innerText = file.name+' ['+Math.round(file.size/1024)+'k] '      
+                    //     var reader = new FileReader();  
+                    //     reader.readAsDataURL(file);  
+                    //     reader.onload = function(event){  
+                    //         //console.log(event)
+                    //         var img = document.createElement('img')
+                    //         img.style['width'] = '100px'
+                    //         img.src = event.target.result   
+                    //         li.appendChild(img)
+                    //     }
                     ul.appendChild(li)
                 }
                 return ul
