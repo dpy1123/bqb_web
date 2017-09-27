@@ -71,8 +71,8 @@ def uploads():
 
 @app.route("/imgs")
 def list_imgs():
-    page_no = request.args.get('p', 0)
-    page_size = request.args.get('size', 10)
+    page_no = int(request.args.get('p', 0))
+    page_size = int(request.args.get('size', 10))
     query = request.args.get('q', '')
     total, imgs = db.query_img(query, page_no, page_size)
     return make_response(jsonify({'msg': 'ok', 'data': {'total': total, 'list': [build_img_vo(img) for img in imgs]}}), 200)

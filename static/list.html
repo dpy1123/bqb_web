@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="common.js"></script>
+    <title>list</title>
+</head>
+<body>
+    <div>
+        tag: <input type="text" name="query">
+        p: <input type="text" name="page">
+        size: <input type="text" name="size">
+        <button name="search_btn">search</button>
+        <script>
+            var host = 'http://127.0.0.1:8009' 
+            document.querySelector('button[name=search_btn]').addEventListener('click', function(event){
+                var query_str = document.querySelector('input[name=query]').value
+                var page = document.querySelector('input[name=page]').value
+                var size = document.querySelector('input[name=size]').value
+                get_data(host + '/imgs', {'p': page, 'size': size, 'q': query_str}, function(result){
+                    var imgs = result.data.list
+                    var new_result = build_img_list(imgs, 100)
+                    old_div = document.querySelector('#result')
+                    if(old_div)
+                        document.querySelector('div').replaceChild(new_result, old_div)
+                    else
+                        document.querySelector('div').appendChild(new_result)
+                })
+            }, false)
+
+            function build_img_list(imgs, size_limit) {
+                var list = document.createElement('div')
+                list.id = 'result'
+                for (var i = 0; i < imgs.length; i++) {
+                    var img = imgs[i];
+                    var item = document.createElement('div')
+                    item.id = img['_id']
+                    var pic = document.createElement('img')
+                    pic.style['width'] = size_limit+'px'
+                    pic.src = host + img['url']
+                    item.appendChild(pic)
+                    var tag = document.createElement('input')
+                    tag.attributes['type'] = 'text'
+                    tag.value = img['tags']
+                    item.appendChild(tag)
+                    var btn = document.createElement('button')
+                    btn.attributes['name'] = 'update_tag_btn'
+                    btn.textContent = 'update_img_tags'
+                    btn.addEventListener('click', (function(img_id){
+                        return function(event){
+                            var tags = document.getElementById(img_id).querySelector('input').value.split(',')
+                            post_data(host+'/imgs/'+img_id, JSON.stringify({'tags': tags}), function(result){
+                                console.log(result.msg)
+                            })
+                        }
+                    })(img['_id']), false)
+                    item.appendChild(btn)
+                    list.appendChild(item)
+                }
+                return list
+            }         
+        </script>
+    </div>
+</body>
+</html>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <!-- <script src="http://libs.baidu.com/jquery/1.11.1/jquery.min.js"></script> -->
+    <script src="common.js"></script>
     <title>Document</title>
 </head>
 <body>
@@ -52,21 +53,6 @@
                 document.querySelector('#progress').innerText = current/total * 100
             }
 
-            function post_data(url, data, callback) {
-                var xhr = new XMLHttpRequest();
-                xhr.open('post', url);
-                xhr.onreadystatechange = function () {
-                    if ( xhr.readyState === xhr.DONE ) {
-                        if ( xhr.status === 200 || xhr.status === 0 ) {
-                            if ( xhr.responseText ) {
-                                var json = JSON.parse(xhr.responseText)
-                                callback( json )
-                            }
-                        }
-                    }
-                }
-                xhr.send(data);
-            }
             
             var worker = new Worker('pic_loader.js')
             worker.onmessage = function(event){
@@ -84,18 +70,24 @@
 
             function resize_img(img_base64_str, img, size_limit){
                 var canvas = document.createElement('canvas')
+                canvas.width = size_limit
+                canvas.height = size_limit
                 var ctx = canvas.getContext('2d')
                 ctx.clearRect(0, 0, size_limit, size_limit)
                 var tmp_img = document.createElement('img')
                 tmp_img.src = img_base64_str
                 tmp_img.onload = function() {
                     var type = img_base64_str.slice(11, img_base64_str.indexOf(';')) //data:image/gif;base64,...
+                    var w = tmp_img.width
+                    var h = tmp_img.height
+                    var r = w/h
                     if(type=='gif'){ //gif不缩放，直接给原来的base64str
                         img.src = img_base64_str
+                        if(r>=1)
+                            img.style['width'] = size_limit+'px'
+                        else
+                            img.style['height'] = size_limit+'px'
                     }else{
-                        var w = tmp_img.width
-                        var h = tmp_img.height
-                        var r = w/h
                         if(r>=1)
                             ctx.drawImage(tmp_img, 0, (size_limit -size_limit/r)/2, size_limit, size_limit/r)
                         else
