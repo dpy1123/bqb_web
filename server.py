@@ -16,7 +16,7 @@ FS_ROOT = '/Users/dd/PycharmProjects/bqb_web/imgs'
 app = Flask(__name__)
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 * 10 # 16m * 10
-# db = DB('mongodb://localhost:27017/', 'bqb')
+# db = DB('mongodb://192.168.1.100:27017/', 'bqb')
 db = DB('mongodb://172.16.6.218:27017/', 'bqb')
 
 
@@ -34,11 +34,11 @@ def save_file(save_path, img_buf):
         fw.flush()
 
 
-def add_cors_header(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'POST'
-    response.headers['Access-Control-Allow-Headers'] = 'x-requested-with,content-type'
-    return response
+# def add_cors_header(response):
+#     response.headers['Access-Control-Allow-Origin'] = '*'
+#     response.headers['Access-Control-Allow-Methods'] = 'POST'
+#     response.headers['Access-Control-Allow-Headers'] = 'x-requested-with,content-type'
+#     return response
 
 
 @app.route("/uploads", methods=['GET', 'POST'])
@@ -61,9 +61,9 @@ def uploads():
                         save_path = os.path.join(FS_ROOT, file_name)
                         save_file(save_path, img_buf)
                         db.save_img(filename, save_path, d_hash, suffix)
-                        file_saved.append({'filename': filename})
+                        file_saved.append({'filename': file.filename})  # 这里返回原始的filename，不要secure之后的
                     else:  # 旧图
-                        file_unsaved.append({'filename': filename, 'similar_imgs': [build_img_vo(img) for img in similar_imgs]})
+                        file_unsaved.append({'filename': file.filename, 'similar_imgs': [build_img_vo(img) for img in similar_imgs]})
         return make_response(jsonify({'msg': 'ok', 'data': {'file_saved': file_saved, 'file_unsaved': file_unsaved}}), 200)
     else:
         return make_response(jsonify({'msg': '喵喵喵？'}), 405)
@@ -109,4 +109,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(port=8009)
+    app.run(port=8009)  # 默认监听127.0.0.1，需要指定host=供外网调用的地址
